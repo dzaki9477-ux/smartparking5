@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartPark — QR Parking System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f5f5f0;--card:#fff;--sidebar:#fff;
+      --text:#1a1a1a;--sub:#6b7280;
+      --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.18);
+      --accent:#1a1a2e;
+      --r:8px;--rl:14px;
+      --mono:'Space Mono',monospace;
+      --sans:'Syne',sans-serif;
+    }
+    @media(prefers-color-scheme:dark){
+      :root{--bg:#111113;--card:#1c1c1e;--sidebar:#1c1c1e;--text:#f5f5f0;--sub:#9ca3af;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.18)}
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+    /* HEADER */
+    .hdr{background:var(--card);border-bottom:.5px solid var(--border);padding:13px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40}
+    .hdr-left{display:flex;align-items:center;gap:11px}
+    .logo-ic{width:36px;height:36px;background:var(--accent);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:19px}
+    .logo-t{font-size:17px;font-weight:800;letter-spacing:-.4px}
+    .logo-s{font-size:9px;color:var(--sub);letter-spacing:1.2px;text-transform:uppercase}
+    .hdr-stats{display:flex;gap:24px}
+    .hs{text-align:center}
+    .hs-v{font-family:var(--mono);font-size:20px;font-weight:700}
+    .hs-v.g{color:#10b981}.hs-v.r{color:#ef4444}.hs-v.a{color:#f59e0b}.hs-v.b{color:#3b82f6}
+    .hs-l{font-size:8px;color:var(--sub);text-transform:uppercase;letter-spacing:.8px}
+    .clock{font-family:var(--mono);font-size:12px;color:var(--sub)}
+
+    /* LAYOUT */
+    .main{display:grid;grid-template-columns:310px 1fr;min-height:calc(100vh - 64px)}
+    .sidebar{background:var(--sidebar);border-right:.5px solid var(--border);padding:18px;overflow-y:auto;max-height:calc(100vh - 64px);position:sticky;top:64px}
+    .content{padding:18px;overflow-y:auto}
+
+    /* TABS */
+    .tab-row{display:flex;gap:3px;margin-bottom:14px;flex-wrap:wrap}
+    .tb{padding:6px 13px;border-radius:var(--r);background:transparent;border:.5px solid var(--border);font-family:var(--sans);font-size:11px;font-weight:600;color:var(--sub);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .tb.active{background:var(--accent);color:#fff;border-color:transparent}
+    .tb:hover:not(.active){border-color:var(--border2);color:var(--text)}
+
+    /* FORM */
+    .sec-title{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--sub);margin-bottom:10px}
+    .fg{margin-bottom:12px}
+    .fl{font-size:11px;color:var(--sub);margin-bottom:4px;display:block}
+    .fi,.fs{width:100%;padding:9px 11px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);font-size:12px;color:var(--text);transition:border-color .2s}
+    .fi{font-family:var(--mono);letter-spacing:1px}
+    .fs{font-family:var(--sans)}
+    .fi:focus,.fs:focus{outline:none;border-color:var(--border2)}
+
+    /* BUTTONS */
+    .btn{width:100%;padding:10px;border:none;border-radius:var(--r);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s;margin-top:3px}
+    .btn:hover{opacity:.87}.btn:active{transform:scale(.98)}
+    .btn-dark{background:var(--accent);color:#fff}
+    .btn-green{background:#059669;color:#fff}
+    .btn-red{background:#dc2626;color:#fff}
+    .btn-amber{background:#d97706;color:#fff}
+    .btn-blue{background:#2563eb;color:#fff}
+    .btn-ghost{background:var(--bg);border:.5px solid var(--border);color:var(--text)}
+    .btn-sm{padding:7px 14px;width:auto;font-size:11px;margin-top:0}
+
+    /* DIVIDER */
+    .div{height:.5px;background:var(--border);margin:14px 0}
+
+    /* SLOT CARDS */
+    .occ-list{display:flex;flex-direction:column;gap:7px}
+    .sc{background:var(--bg);border:.5px solid var(--border);border-radius:var(--rl);padding:11px;cursor:pointer;transition:border-color .2s}
+    .sc:hover{border-color:var(--border2)}
+    .sc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .sc-id{font-family:var(--mono);font-size:12px;font-weight:700}
+    .sc-plate{font-family:var(--mono);font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:4px;letter-spacing:1px}
+    .sc-info{font-size:10px;color:var(--sub);display:flex;gap:10px;flex-wrap:wrap}
+    .sc-fee{color:#f59e0b;font-weight:700}
+    .sc-exp{color:#ef4444;font-weight:700}
+    .no-sl{text-align:center;padding:20px;color:var(--sub);font-size:12px}
+
+    /* PARKING MAP */
+    .park-area{background:var(--card);border-radius:var(--rl);border:.5px solid var(--border);padding:18px;margin-bottom:14px}
+    .za-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .za-name{font-size:14px;font-weight:700}
+    .za-cnt{font-size:11px;color:var(--sub)}
+    .occ-row{margin-bottom:12px}
+    .occ-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:4px}
+    .occ-bar{height:4px;background:var(--border);border-radius:3px;overflow:hidden}
+    .occ-fill{height:100%;border-radius:3px;transition:width .5s}
+    .pgrid{display:grid;gap:7px;margin-bottom:10px}
+    .road{text-align:center;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--sub);padding:6px 0;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border);margin:5px 0 12px}
+
+    .ps{aspect-ratio:1.6;border-radius:6px;border:1.5px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .18s,box-shadow .18s;min-height:50px}
+    .ps:hover{transform:scale(1.07);z-index:2;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+    .ps.available{background:#d1fae5;border-color:#6ee7b7}
+    .ps.occupied{background:#fee2e2;border-color:#fca5a5}
+    .ps.reserved{background:#fef3c7;border-color:#fcd34d}
+    .ps.disabled{background:#e0e7ff;border-color:#a5b4fc}
+    .ps.expired{background:#f3f4f6;border-color:#d1d5db;opacity:.6}
+    @media(prefers-color-scheme:dark){
+      .ps.available{background:#064e3b;border-color:#065f46}
+      .ps.occupied{background:#450a0a;border-color:#7f1d1d}
+      .ps.reserved{background:#451a03;border-color:#78350f}
+      .ps.disabled{background:#1e1b4b;border-color:#3730a3}
+      .ps.expired{background:#27272a;border-color:#3f3f46}
+    }
+    .ps-icon{font-size:13px;margin-bottom:1px}
+    .ps-id{font-family:var(--mono);font-size:8px;font-weight:700}
+    .ps-pl{font-family:var(--mono);font-size:6px;color:var(--sub);margin-top:1px}
+
+    /* LEGEND */
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
+    .li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--sub)}
+    .ld{width:10px;height:10px;border-radius:3px}
+    .ld-a{background:#6ee7b7}.ld-o{background:#fca5a5}.ld-r{background:#fcd34d}.ld-d{background:#a5b4fc}.ld-e{background:#d1d5db}
+
+    /* STATS */
+    .stats-card{background:var(--card);border-radius:var(--rl);border:.5px solid var(--border);padding:18px;margin-bottom:14px}
+    .met-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+    .met{background:var(--bg);border-radius:var(--r);padding:12px;text-align:center}
+    .met-n{font-family:var(--mono);font-size:20px;font-weight:700}
+    .met-n.g{color:#10b981}.met-n.a{color:#f59e0b}
+    .met-l{font-size:8px;color:var(--sub);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+
+    /* HISTORY TABLE */
+    .hist-card{background:var(--card);border-radius:var(--rl);border:.5px solid var(--border);padding:18px}
+    .hist-tbl{width:100%;border-collapse:collapse;font-size:11px}
+    .hist-tbl th{text-align:left;color:var(--sub);font-weight:500;padding:7px 9px;border-bottom:.5px solid var(--border);font-size:8px;text-transform:uppercase;letter-spacing:.7px}
+    .hist-tbl td{padding:9px;border-bottom:.5px solid var(--border);vertical-align:middle}
+    .hist-tbl tr:last-child td{border-bottom:none}
+    .hist-tbl tr:hover td{background:var(--bg)}
+    .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+    .badge.in{background:#d1fae5;color:#065f46}
+    .badge.out{background:#f3f4f6;color:#6b7280}
+    .badge.exp{background:#fee2e2;color:#991b1b}
+    .badge.res{background:#fef3c7;color:#92400e}
+
+    /* ── MODAL BASE ── */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px)}
+    .overlay.show{opacity:1;pointer-events:all}
+    .modal{background:var(--card);border-radius:18px;border:.5px solid var(--border);padding:26px;width:360px;max-width:94vw;transform:translateY(18px);transition:transform .25s;max-height:90vh;overflow-y:auto}
+    .overlay.show .modal{transform:translateY(0)}
+    .modal-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:18px}
+    .modal-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:8px 0;border-bottom:.5px solid var(--border)}
+    .modal-row:last-of-type{border-bottom:none}
+    .mkey{color:var(--sub)}
+    .mval{font-family:var(--mono);font-weight:700}
+    .modal-btns{display:flex;gap:9px;margin-top:16px}
+
+    /* ── QR MODAL ── */
+    .qr-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin:10px 0}
+    .qr-canvas{padding:14px;background:#fff;border-radius:12px;border:1px solid var(--border)}
+    .qr-code-label{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:3px;color:var(--accent);text-align:center}
+    .qr-sub{font-size:11px;color:var(--sub);text-align:center}
+    .exp-bar-wrap{width:100%;margin:4px 0}
+    .exp-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+    .exp-bar-fill{height:100%;background:#f59e0b;border-radius:3px;transition:width 1s linear}
+    .exp-text{font-size:10px;color:#f59e0b;text-align:center;font-weight:600;margin-top:3px}
+
+    /* ── SCAN MODAL ── */
+    .scan-wrap{text-align:center;padding:8px 0}
+    .scan-icon{font-size:52px;margin-bottom:10px}
+    .scan-input-row{display:flex;gap:8px;margin-top:16px}
+
+    /* ── PAYMENT MODAL ── */
+    .pay-method-row{display:flex;gap:10px;margin:12px 0}
+    .pay-opt{flex:1;border:.5px solid var(--border);border-radius:var(--rl);padding:14px 8px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg)}
+    .pay-opt.sel{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 1.5px var(--accent)}
+    .pay-opt-icon{font-size:26px;margin-bottom:5px}
+    .pay-opt-label{font-size:12px;font-weight:700}
+    .pay-opt-sub{font-size:9px;color:var(--sub);margin-top:2px}
+    .qris-qr{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0}
+    .cash-area{padding:10px 0}
+    .cash-input{width:100%;padding:12px 14px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:20px;font-weight:700;color:var(--text);outline:none;text-align:right}
+    .cash-input:focus{border-color:var(--border2)}
+    .quick-amounts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+    .qa{padding:5px 11px;background:var(--bg);border:.5px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--mono);transition:background .15s}
+    .qa:hover{background:var(--card)}
+    .change-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 12px;background:#d1fae5;border-radius:var(--r)}
+    .change-label{font-size:12px;color:#065f46;font-weight:600}
+    .change-val{font-family:var(--mono);font-size:18px;font-weight:700;color:#059669}
+
+    /* RECEIPT */
+    .receipt-paper{background:var(--bg);border:1px dashed var(--border2);border-radius:12px;padding:18px 16px;font-family:var(--mono)}
+    .receipt-head{text-align:center;margin-bottom:12px}
+    .receipt-brand{font-size:16px;font-weight:700;letter-spacing:2px}
+    .receipt-row{display:flex;justify-content:space-between;font-size:11px;margin:5px 0}
+    .receipt-key{color:var(--sub)}
+    .receipt-val{font-weight:700}
+    .receipt-total-row{display:flex;justify-content:space-between;padding-top:10px;margin-top:4px;border-top:1px dashed var(--border2)}
+    .receipt-total-val{font-size:18px;font-weight:700;color:#059669}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:22px;right:22px;background:var(--accent);color:#fff;padding:11px 18px;border-radius:var(--rl);font-size:12px;font-weight:600;z-index:300;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:260px}
+    .toast.show{opacity:1;transform:translateY(0)}
+    .toast.success{background:#059669}
+    .toast.error{background:#dc2626}
+    .toast.warn{background:#d97706}
+
+    /* SCAN PAGE */
+    .scan-page-wrap{display:flex;flex-direction:column;gap:14px}
+    .scan-card{background:var(--card);border:.5px solid var(--border);border-radius:var(--rl);padding:20px;text-align:center}
+    .scan-card-icon{font-size:48px;margin-bottom:10px}
+    .scan-card-title{font-size:16px;font-weight:700;margin-bottom:5px}
+    .scan-card-sub{font-size:11px;color:var(--sub);margin-bottom:14px;line-height:1.6}
+    .scan-input-big{width:100%;padding:13px 16px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);letter-spacing:3px;text-align:center;outline:none}
+    .scan-input-big:focus{border-color:var(--border2)}
+
+    /* COUNTDOWN BADGE */
+    .cdwn{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px}
+    .cdwn.urgent{color:#dc2626;background:#fee2e2}
+
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-left">
+    <div class="logo-ic">🅿</div>
+    <div>
+      <div class="logo-t">SmartPark</div>
+      <div class="logo-s">QR Verification System</div>
+    </div>
+  </div>
+  <div class="hdr-stats">
+    <div class="hs"><div class="hs-v g" id="h-avail">0</div><div class="hs-l">Tersedia</div></div>
+    <div class="hs"><div class="hs-v b" id="h-res">0</div><div class="hs-l">Dipesan</div></div>
+    <div class="hs"><div class="hs-v r" id="h-occ">0</div><div class="hs-l">Terisi</div></div>
+    <div class="hs"><div class="hs-v a" id="h-rev">Rp0</div><div class="hs-l">Pendapatan</div></div>
+  </div>
+  <div class="clock" id="clock">--:--:--</div>
+</header>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="tab-row">
+      <button class="tb active" onclick="setSideTab('booking')">📋 Booking</button>
+      <button class="tb" onclick="setSideTab('scan')">📷 Scan QR</button>
+    </div>
+
+    <!-- TAB BOOKING -->
+    <div id="tab-booking">
+      <div class="sec-title">Form Pemesanan</div>
+
+      <div class="fg">
+        <label class="fl">Nomor Plat Kendaraan</label>
+        <input class="fi" id="b-plate" placeholder="B 1234 ABC" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
+      <div class="fg">
+        <label class="fl">Jenis Kendaraan</label>
+        <select class="fs" id="b-vtype">
+          <option value="motor">🛵 Motor — Rp2.000/jam</option>
+          <option value="mobil" selected>🚗 Mobil — Rp5.000/jam</option>
+          <option value="bus">🚌 Bus/Truk — Rp10.000/jam</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Zona Parkir</label>
+        <select class="fs" id="b-zone" onchange="updateSlotOpts()">
+          <option value="A">Zona A — Lantai 1</option>
+          <option value="B">Zona B — Lantai 1</option>
+          <option value="C">Zona C — Lantai 2</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Slot Spesifik (opsional)</label>
+        <select class="fs" id="b-slot">
+          <option value="">Auto-assign slot kosong</option>
+        </select>
+      </div>
+
+      <button class="btn btn-dark" onclick="doBooking()">📱 Pesan & Dapatkan QR</button>
+
+      <div class="div"></div>
+
+      <div class="sec-title">Kendaraan Aktif (<span id="occ-count">0</span>)</div>
+      <div class="occ-list" id="occ-list">
+        <div class="no-sl">Belum ada kendaraan</div>
+      </div>
+
+      <div class="div"></div>
+
+      <div class="sec-title">Reservasi Menunggu (<span id="res-count">0</span>)</div>
+      <div class="occ-list" id="res-list">
+        <div class="no-sl">Belum ada reservasi</div>
+      </div>
+    </div>
+
+    <!-- TAB SCAN -->
+    <div id="tab-scan" style="display:none">
+      <div class="scan-page-wrap">
+        <div class="scan-card">
+          <div class="scan-card-icon">📷</div>
+          <div class="scan-card-title">Scan QR Masuk / Keluar</div>
+          <div class="scan-card-sub">
+            Scan QR saat <b>tiba di parkiran</b> untuk memulai timer.<br/>
+            Scan lagi saat <b>ingin keluar</b> untuk melihat tagihan.
+          </div>
+          <input class="scan-input-big" id="scan-code" placeholder="XXXXXX"
+                 oninput="this.value=this.value.toUpperCase()"
+                 onkeydown="if(event.key==='Enter') processScan()"/>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn-green" style="flex:2" onclick="processScan()">✓ Proses Scan</button>
+            <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('scan-code').value=''">Bersihkan</button>
+          </div>
+          <div style="margin-top:12px;font-size:10px;color:var(--sub)">
+            💡 Ketik kode booking (6 karakter setelah "BK-") lalu tekan Enter
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+    <div class="tab-row">
+      <button class="tb active" onclick="setMainTab('peta')">🗺 Peta Parkir</button>
+      <button class="tb" onclick="setMainTab('statistik')">📊 Statistik</button>
+      <button class="tb" onclick="setMainTab('riwayat')">📋 Riwayat</button>
+    </div>
+
+    <div id="tab-peta">
+      <div id="zones-container"></div>
+      <div class="legend">
+        <div class="li"><div class="ld ld-a"></div>Tersedia</div>
+        <div class="li"><div class="ld ld-r"></div>Dipesan (QR belum scan)</div>
+        <div class="li"><div class="ld ld-o"></div>Terisi (QR sudah scan)</div>
+        <div class="li"><div class="ld ld-e"></div>Hangus / Expired</div>
+        <div class="li"><div class="ld ld-d"></div>Difabel</div>
+      </div>
+    </div>
+
+    <div id="tab-statistik" style="display:none">
+      <div class="stats-card">
+        <div class="sec-title" style="margin-bottom:14px">Ringkasan Hari Ini</div>
+        <div class="met-row">
+          <div class="met"><div class="met-n g" id="m-checkin">0</div><div class="met-l">Total Masuk</div></div>
+          <div class="met"><div class="met-n" id="m-checkout">0</div><div class="met-l">Total Keluar</div></div>
+          <div class="met"><div class="met-n a" id="m-rev">Rp0</div><div class="met-l">Pendapatan</div></div>
+        </div>
+        <div id="zone-stats"></div>
+      </div>
+    </div>
+
+    <div id="tab-riwayat" style="display:none">
+      <div class="hist-card">
+        <div class="sec-title" style="margin-bottom:14px">Riwayat Transaksi</div>
+        <div style="overflow-x:auto">
+          <table class="hist-tbl">
+            <thead><tr>
+              <th>Kode</th><th>Plat</th><th>Jenis</th><th>Slot</th>
+              <th>Dipesan</th><th>Masuk</th><th>Keluar</th><th>Durasi</th><th>Biaya</th><th>Status</th>
+            </tr></thead>
+            <tbody id="hist-body">
+              <tr><td colspan="10" style="text-align:center;color:var(--sub);padding:24px">Belum ada riwayat</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ MODAL: QR BOOKING ═══ -->
+<div class="overlay" id="qr-overlay" onclick="if(event.target===this)closeQR()">
+  <div class="modal">
+    <div class="modal-title">📱 QR Kode Parkir Anda</div>
+    <div class="qr-wrap">
+      <div class="qr-canvas" id="qr-canvas"></div>
+      <div class="qr-code-label" id="qr-code-display">-</div>
+      <div class="qr-sub">Tunjukkan / scan QR ini saat tiba di area parkir</div>
+      <div class="exp-bar-wrap" id="exp-bar-wrap">
+        <div class="exp-bar-bg"><div class="exp-bar-fill" id="exp-bar" style="width:100%"></div></div>
+        <div class="exp-text" id="exp-text">Berlaku 60:00 menit</div>
+      </div>
+    </div>
+    <div id="qr-detail"></div>
+    <div style="margin-top:8px;padding:10px;background:#fef3c7;border-radius:var(--r);font-size:11px;color:#92400e;line-height:1.6">
+      ⚠ <b>Penting:</b> Scan QR ini saat tiba di parkiran untuk memulai timer. Jika tidak di-scan dalam <b>1 jam</b>, pemesanan akan <b>hangus otomatis</b>.
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeQR()">Tutup</button>
+      <button class="btn btn-blue btn-sm" style="flex:2" onclick="copyCode()">📋 Salin Kode</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: SCAN RESULT ═══ -->
+<div class="overlay" id="scan-overlay" onclick="if(event.target===this)closeScan()">
+  <div class="modal" id="scan-modal-content"></div>
+</div>
+
+<!-- ═══ MODAL: PAYMENT ═══ -->
+<div class="overlay" id="pay-overlay">
+  <div class="modal">
+    <div class="modal-title">💳 Pembayaran Parkir</div>
+
+    <!-- Tagihan summary -->
+    <div id="pay-summary"></div>
+
+    <!-- Pilih metode -->
+    <div style="font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--sub);margin:12px 0 6px">Metode Pembayaran</div>
+    <div class="pay-method-row">
+      <div class="pay-opt sel" id="popt-qris" onclick="selectPayMethod('qris')">
+        <div class="pay-opt-icon">📱</div>
+        <div class="pay-opt-label">QRIS</div>
+        <div class="pay-opt-sub">Scan & Bayar</div>
+      </div>
+      <div class="pay-opt" id="popt-cash" onclick="selectPayMethod('cash')">
+        <div class="pay-opt-icon">💵</div>
+        <div class="pay-opt-label">Tunai</div>
+        <div class="pay-opt-sub">Bayar Kasir</div>
+      </div>
+    </div>
+
+    <!-- QRIS area -->
+    <div id="pay-qris" class="qris-qr">
+      <div style="font-size:11px;color:var(--sub)">Scan QR berikut untuk membayar</div>
+      <div style="padding:12px;background:#fff;border-radius:10px;border:1px solid var(--border)">
+        <div id="pay-qr-canvas"></div>
+      </div>
+      <div id="pay-qr-amount" style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent)"></div>
+      <div style="font-size:10px;color:var(--sub)">QR berlaku 5 menit</div>
+    </div>
+
+    <!-- Cash area -->
+    <div id="pay-cash" style="display:none" class="cash-area">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:6px">Masukkan nominal uang</div>
+      <input class="cash-input" id="cash-input" placeholder="0" oninput="onCashInput()" type="text"/>
+      <div class="quick-amounts" id="quick-amounts"></div>
+      <div id="change-display" style="display:none" class="change-row">
+        <span class="change-label">Kembalian</span>
+        <span class="change-val" id="change-val">Rp0</span>
+      </div>
+      <div id="cash-warn" style="display:none;font-size:11px;color:#dc2626;margin-top:8px;font-weight:600"></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="cancelPay()">Batal</button>
+      <button class="btn btn-green btn-sm" style="flex:2" id="pay-confirm-btn" onclick="confirmPay()">✓ Konfirmasi Bayar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: RECEIPT ═══ -->
+<div class="overlay" id="rcpt-overlay" onclick="if(event.target===this)closeReceipt()">
+  <div class="modal">
+    <div class="modal-title">🧾 Struk Parkir</div>
+    <div id="rcpt-content"></div>
+    <div class="modal-btns" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeReceipt()">Tutup</button>
+      <button class="btn btn-dark btn-sm" style="flex:2" onclick="printReceipt()">🖨 Print Struk</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   DATA & CONSTANTS
+══════════════════════════════════════════════════════════ */
+const TARIFF       = { motor:2000, mobil:5000, bus:10000 };
+const TARIFF_LABEL = { motor:'Motor 🛵', mobil:'Mobil 🚗', bus:'Bus/Truk 🚌' };
+const EXPIRY_MS    = 60 * 60 * 1000; // 1 jam → hangus
+
+const zones = {
+  A:{ name:'Zona A — Lantai 1', cols:5, slots:[] },
+  B:{ name:'Zona B — Lantai 1', cols:4, slots:[] },
+  C:{ name:'Zona C — Lantai 2', cols:5, slots:[] },
+};
+
+function makeSlots(zk, count) {
+  const s=[];
+  for(let i=1;i<=count;i++){
+    const id=zk+String(i).padStart(2,'0');
+    let type='available';
+    if(i===1) type='disabled';
+    if(i===count) type='reserved_perm'; // slot reserved permanen (difabel area)
+    s.push({id,type,plate:null,vtype:null,checkinTime:null,bookingCode:null});
+  }
+  return s;
+}
+zones.A.slots = makeSlots('A',12);
+zones.B.slots = makeSlots('B',10);
+zones.C.slots = makeSlots('C',12);
+// Fix: slot terakhir jadi disabled bukan reserved
+zones.A.slots[11].type='disabled';
+zones.B.slots[9].type='disabled';
+zones.C.slots[11].type='disabled';
+
+// Reservations map: code → { plate, vtype, slotId, bookedAt, checkinTime, status }
+const reservations = {};
+let txHistory     = [];
+let totalRevenue  = 0;
+let totalCheckin  = 0;
+let totalCheckout = 0;
+
+// Payment state
+let currentPayData = null;
+let selectedPayMethod = 'qris';
+let payQrInstance = null;
+
+/* ══════════════════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════════════════ */
+const allSlots    = () => [...zones.A.slots,...zones.B.slots,...zones.C.slots];
+const getSlot     = id => allSlots().find(s=>s.id===id);
+const fmtRp       = n  => 'Rp'+Number(n).toLocaleString('id-ID');
+const fmtTime     = d  => d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const fmtDate     = d  => d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'2-digit'});
+const fmtDur      = ms => {
+  const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sc=s%60;
+  return h>0?`${h}j ${m}m ${sc}d`:`${m}m ${sc}d`;
+};
+const calcFee     = (ms,t) => Math.max(1,Math.ceil(ms/3600000))*TARIFF[t];
+const makeCode    = () => 'BK-'+Math.random().toString(36).toUpperCase().slice(2,8);
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show ${type}`;
+  setTimeout(()=>t.className='toast',3200);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB NAVIGATION
+══════════════════════════════════════════════════════════ */
+function setSideTab(tab) {
+  document.getElementById('tab-booking').style.display = tab==='booking'?'':'none';
+  document.getElementById('tab-scan').style.display    = tab==='scan'?'':'none';
+  document.querySelectorAll('.sidebar .tb').forEach((b,i)=>{
+    b.classList.toggle('active',(i===0&&tab==='booking')||(i===1&&tab==='scan'));
+  });
+}
+
+function setMainTab(tab) {
+  ['peta','statistik','riwayat'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.content .tb').forEach((b,i)=>{
+    b.classList.toggle('active',['peta','statistik','riwayat'][i]===tab);
+  });
+  if(tab==='statistik') renderStats();
+  if(tab==='riwayat')   renderHistory();
+}
+
+/* ══════════════════════════════════════════════════════════
+   SLOT OPTIONS
+══════════════════════════════════════════════════════════ */
+function updateSlotOpts() {
+  const zone=document.getElementById('b-zone').value;
+  const sel=document.getElementById('b-slot');
+  sel.innerHTML='<option value="">Auto-assign slot kosong</option>';
+  zones[zone].slots.filter(s=>s.type==='available').forEach(s=>{
+    sel.innerHTML+=`<option value="${s.id}">${s.id}</option>`;
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   BOOKING — PESAN & GENERATE QR
+══════════════════════════════════════════════════════════ */
+let activeQRCode = null;
+let expiryInterval = null;
+let currentBookingCode = null;
+
+function doBooking() {
+  const plate  = document.getElementById('b-plate').value.trim();
+  const vtype  = document.getElementById('b-vtype').value;
+  const zone   = document.getElementById('b-zone').value;
+  let   slotId = document.getElementById('b-slot').value;
+
+  if(!plate){ showToast('Masukkan nomor plat kendaraan!','error'); return; }
+  if(!/^[A-Z]{1,2}\s?\d{1,4}\s?[A-Z]{1,3}$/i.test(plate.replace(/\s/g,''))){
+    showToast('Format plat tidak valid (cth: B 1234 ABC)','error'); return;
+  }
+
+  // Cek duplikat aktif
+  const dup = Object.values(reservations).find(r=>
+    r.plate===plate && (r.status==='pending'||r.status==='active')
+  );
+  if(dup){ showToast(`Plat ${plate} sudah punya reservasi aktif!`,'error'); return; }
+
+  // Auto-assign slot
+  if(!slotId){
+    const avail=zones[zone].slots.find(s=>s.type==='available');
+    if(!avail){ showToast(`Zona ${zone} penuh! Pilih zona lain.`,'error'); return; }
+    slotId=avail.id;
+  }
+  const slot=getSlot(slotId);
+  if(!slot||slot.type!=='available'){ showToast('Slot tidak tersedia.','error'); return; }
+
+  // Buat kode booking
+  const code=makeCode();
+  const now=new Date();
+
+  // Update slot → reserved
+  slot.type='reserved';
+  slot.plate=plate;
+  slot.vtype=vtype;
+  slot.bookingCode=code;
+
+  // Simpan reservasi
+  reservations[code]={
+    plate, vtype, slotId, zone,
+    bookedAt: now,
+    checkinTime: null,
+    checkoutTime: null,
+    status: 'pending', // pending → active → done / expired
+  };
+
+  // Simpan ke history
+  txHistory.unshift({
+    code, plate, vtype, slotId,
+    booked: now, checkin:null, checkout:null,
+    duration:null, fee:null, status:'reserved',
+  });
+
+  // Reset form
+  document.getElementById('b-plate').value='';
+  document.getElementById('b-slot').value='';
+  updateSlotOpts();
+  updateHeader(); renderMap(); renderOccupied();
+
+  showToast(`✓ Booking ${code} berhasil! QR siap.`,'success');
+
+  // Tampilkan QR modal
+  showQRModal(code);
+}
+
+/* ══════════════════════════════════════════════════════════
+   QR MODAL
+══════════════════════════════════════════════════════════ */
+function showQRModal(code) {
+  currentBookingCode=code;
+  const res=reservations[code];
+
+  // Generate QR
+  document.getElementById('qr-canvas').innerHTML='';
+  document.getElementById('qr-code-display').textContent=code;
+  new QRCode(document.getElementById('qr-canvas'),{
+    text: code,
+    width:160, height:160,
+    colorDark:'#1a1a2e', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+
+  // Detail
+  document.getElementById('qr-detail').innerHTML=`
+    <div class="modal-row"><span class="mkey">Plat</span><span class="mval">${res.plate}</span></div>
+    <div class="modal-row"><span class="mkey">Kendaraan</span><span class="mval">${TARIFF_LABEL[res.vtype]}</span></div>
+    <div class="modal-row"><span class="mkey">Slot</span><span class="mval">${res.slotId}</span></div>
+    <div class="modal-row"><span class="mkey">Waktu Pesan</span><span class="mval">${fmtDate(res.bookedAt)} ${fmtTime(res.bookedAt)}</span></div>
+    <div class="modal-row"><span class="mkey">Tarif</span><span class="mval">${fmtRp(TARIFF[res.vtype])}/jam</span></div>
+  `;
+
+  // Expiry countdown bar
+  clearInterval(expiryInterval);
+  expiryInterval=setInterval(()=>{
+    const elapsed=Date.now()-res.bookedAt.getTime();
+    const pct=Math.max(0,100-(elapsed/EXPIRY_MS)*100);
+    const remaining=Math.max(0,EXPIRY_MS-elapsed);
+    const rm=Math.floor(remaining/60000), rs=Math.floor((remaining%60000)/1000);
+    document.getElementById('exp-bar').style.width=pct+'%';
+    document.getElementById('exp-bar').style.background=pct>40?'#f59e0b':'#ef4444';
+    document.getElementById('exp-text').textContent=`Berlaku ${String(rm).padStart(2,'0')}:${String(rs).padStart(2,'0')} menit`;
+    document.getElementById('exp-text').style.color=pct>40?'#d97706':'#dc2626';
+    if(pct<=0){ clearInterval(expiryInterval); closeQR(); }
+  },1000);
+
+  document.getElementById('qr-overlay').classList.add('show');
+}
+
+function closeQR(){
+  clearInterval(expiryInterval);
+  document.getElementById('qr-overlay').classList.remove('show');
+}
+
+function copyCode(){
+  if(!currentBookingCode) return;
+  navigator.clipboard.writeText(currentBookingCode).then(()=>{
+    showToast(`Kode ${currentBookingCode} disalin!`,'success');
+  }).catch(()=>{
+    showToast(`Kode: ${currentBookingCode}`,'success');
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   SCAN QR — PROSES
+══════════════════════════════════════════════════════════ */
+function processScan() {
+  let raw=document.getElementById('scan-code').value.trim().toUpperCase();
+  // Accept "BK-XXXXXX" or just "XXXXXX"
+  if(!raw.startsWith('BK-')) raw='BK-'+raw;
+
+  if(!reservations[raw]){
+    showToast(`Kode ${raw} tidak ditemukan!`,'error');
+    return;
+  }
+
+  const res=reservations[raw];
+
+  if(res.status==='expired'){
+    showScanModal('expired', raw, res);
+    return;
+  }
+  if(res.status==='done'){
+    showScanModal('done', raw, res);
+    return;
+  }
+  if(res.status==='pending'){
+    // FIRST SCAN → check-in, mulai timer
+    doCheckin(raw);
+    return;
+  }
+  if(res.status==='active'){
+    // SECOND SCAN → checkout prompt
+    showScanModal('checkout', raw, res);
+    return;
+  }
+}
+
+function doCheckin(code) {
+  const res=reservations[code];
+  const slot=getSlot(res.slotId);
+  if(!slot){ showToast('Slot error!','error'); return; }
+
+  const now=new Date();
+  res.status='active';
+  res.checkinTime=now;
+  slot.type='occupied';
+  slot.checkinTime=now;
+
+  totalCheckin++;
+
+  // Update history
+  const rec=txHistory.find(h=>h.code===code);
+  if(rec){ rec.checkin=now; rec.status='active'; }
+
+  updateHeader(); renderMap(); renderOccupied();
+  document.getElementById('scan-code').value='';
+
+  // Show success scan modal
+  showScanModal('checkin', code, res);
+  showToast(`✓ ${res.plate} berhasil masuk! Timer dimulai.`,'success');
+}
+
+function showScanModal(type, code, res) {
+  const modal=document.getElementById('scan-modal-content');
+  const slot=getSlot(res.slotId);
+
+  if(type==='checkin'){
+    modal.innerHTML=`
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:50px;margin-bottom:8px">🟢</div>
+        <div style="font-size:18px;font-weight:800;color:#059669">Selamat Datang!</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:4px">Timer parkir dimulai sekarang</div>
+      </div>
+      <div class="modal-row"><span class="mkey">Kode</span><span class="mval">${code}</span></div>
+      <div class="modal-row"><span class="mkey">Plat</span><span class="mval">${res.plate}</span></div>
+      <div class="modal-row"><span class="mkey">Slot</span><span class="mval">${res.slotId}</span></div>
+      <div class="modal-row"><span class="mkey">Kendaraan</span><span class="mval">${TARIFF_LABEL[res.vtype]}</span></div>
+      <div class="modal-row"><span class="mkey">Waktu Masuk</span><span class="mval">${fmtDate(res.checkinTime)} ${fmtTime(res.checkinTime)}</span></div>
+      <div class="modal-row"><span class="mkey">Tarif</span><span class="mval">${fmtRp(TARIFF[res.vtype])}/jam</span></div>
+      <div style="margin-top:12px;padding:10px;background:#d1fae5;border-radius:var(--r);font-size:11px;color:#065f46;line-height:1.6">
+        📷 Scan QR ini lagi saat ingin <b>keluar</b> untuk melihat total tagihan.
+      </div>
+      <div class="modal-btns"><button class="btn btn-green btn-sm" style="flex:1" onclick="closeScan()">✓ OK, Lanjutkan</button></div>`;
+
+  } else if(type==='checkout'){
+    const now=new Date();
+    const ms=now-res.checkinTime;
+    const fee=calcFee(ms,res.vtype);
+    const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
+
+    modal.innerHTML=`
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:44px;margin-bottom:6px">🚗</div>
+        <div style="font-size:17px;font-weight:800">Siap Check-Out?</div>
+        <div style="font-size:11px;color:var(--sub);margin-top:3px">${res.plate} — ${res.slotId}</div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#fef3c7,#fffbeb);border:1px solid #fcd34d;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#92400e;margin-bottom:6px">Durasi Terdeteksi</div>
+        <div style="font-family:var(--mono);font-size:36px;font-weight:800;color:#92400e">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:28px;font-weight:800;color:#d97706">${fmtRp(fee)}</div>
+        <div style="font-size:10px;color:#92400e;margin-top:3px">${TARIFF_LABEL[res.vtype]} × ${Math.max(1,Math.ceil(ms/3600000))} jam</div>
+      </div>
+
+      <div class="modal-row"><span class="mkey">Masuk</span><span class="mval">${fmtDate(res.checkinTime)} ${fmtTime(res.checkinTime)}</span></div>
+      <div class="modal-row"><span class="mkey">Sekarang</span><span class="mval">${fmtDate(now)} ${fmtTime(now)}</span></div>
+      <div class="modal-row"><span class="mkey">Slot</span><span class="mval">${res.slotId}</span></div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeScan()">Batal</button>
+        <button class="btn btn-amber btn-sm" style="flex:2" onclick="closeScan();openPayment('${code}')">💳 Bayar ${fmtRp(fee)}</button>
+      </div>`;
+
+  } else if(type==='expired'){
+    modal.innerHTML=`
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:50px;margin-bottom:10px">⌛</div>
+        <div style="font-size:18px;font-weight:800;color:#dc2626">Pemesanan Hangus</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:6px;line-height:1.7">
+          Pemesanan <b>${code}</b> telah hangus karena<br/>tidak di-scan dalam 1 jam.<br/>Silakan buat pemesanan baru.
+        </div>
+      </div>
+      <div class="modal-btns"><button class="btn btn-red btn-sm" style="flex:1" onclick="closeScan()">Tutup</button></div>`;
+
+  } else if(type==='done'){
+    modal.innerHTML=`
+      <div style="text-align:center;padding:10px 0">
+        <div style="font-size:50px;margin-bottom:10px">✅</div>
+        <div style="font-size:18px;font-weight:800;color:#059669">Sudah Selesai</div>
+        <div style="font-size:12px;color:var(--sub);margin-top:6px">Kode ${code} sudah checkout.</div>
+      </div>
+      <div class="modal-btns"><button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeScan()">Tutup</button></div>`;
+  }
+
+  document.getElementById('scan-overlay').classList.add('show');
+}
+
+function closeScan(){
+  document.getElementById('scan-overlay').classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAYMENT
+══════════════════════════════════════════════════════════ */
+function openPayment(code) {
+  const res=reservations[code];
+  const now=new Date();
+  const ms=now-res.checkinTime;
+  const fee=calcFee(ms,res.vtype);
+  const hours=Math.max(1,Math.ceil(ms/3600000));
+
+  currentPayData={ code, res, ms, fee, hours, now };
+  selectedPayMethod='qris';
+
+  // Summary
+  document.getElementById('pay-summary').innerHTML=`
+    <div style="background:var(--bg);border-radius:var(--rl);padding:14px;margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
+        <span style="color:var(--sub)">Plat / Slot</span>
+        <span style="font-family:var(--mono);font-weight:700">${res.plate} — ${res.slotId}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
+        <span style="color:var(--sub)">Durasi</span>
+        <span style="font-family:var(--mono);font-weight:700">${fmtDur(ms)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px">
+        <span style="color:var(--sub)">Jam dihitung</span>
+        <span style="font-family:var(--mono);font-weight:700">${hours} jam × ${fmtRp(TARIFF[res.vtype])}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin-top:8px;padding-top:8px;border-top:.5px solid var(--border)">
+        <span>Total</span>
+        <span style="color:#d97706;font-family:var(--mono)">${fmtRp(fee)}</span>
+      </div>
+    </div>`;
+
+  selectPayMethod('qris');
+  document.getElementById('pay-overlay').classList.add('show');
+}
+
+function selectPayMethod(m) {
+  selectedPayMethod=m;
+  document.getElementById('popt-qris').classList.toggle('sel',m==='qris');
+  document.getElementById('popt-cash').classList.toggle('sel',m==='cash');
+  document.getElementById('pay-qris').style.display=m==='qris'?'':'none';
+  document.getElementById('pay-cash').style.display=m==='cash'?'':'none';
+  document.getElementById('pay-confirm-btn').disabled=(m==='cash');
+  document.getElementById('pay-confirm-btn').style.opacity=(m==='cash')?'0.5':'1';
+
+  if(m==='qris' && currentPayData){
+    document.getElementById('pay-qr-canvas').innerHTML='';
+    new QRCode(document.getElementById('pay-qr-canvas'),{
+      text:`PAYMENT:${currentPayData.code}:${currentPayData.fee}`,
+      width:140,height:140,
+      colorDark:'#1a1a2e',colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.M,
+    });
+    document.getElementById('pay-qr-amount').textContent=fmtRp(currentPayData.fee);
+    document.getElementById('pay-confirm-btn').disabled=false;
+    document.getElementById('pay-confirm-btn').style.opacity='1';
+  }
+  if(m==='cash' && currentPayData){
+    document.getElementById('cash-input').value='';
+    document.getElementById('change-display').style.display='none';
+    document.getElementById('cash-warn').style.display='none';
+    // Quick amounts
+    const fee=currentPayData.fee;
+    const amounts=[fee, Math.ceil(fee/10000)*10000, Math.ceil(fee/50000)*50000, 100000, 200000]
+      .filter((v,i,a)=>a.indexOf(v)===i&&v>=fee).slice(0,4);
+    document.getElementById('quick-amounts').innerHTML=
+      amounts.map(a=>`<div class="qa" onclick="setCash(${a})">${fmtRp(a)}</div>`).join('');
+  }
+}
+
+function setCash(n){
+  document.getElementById('cash-input').value=n.toLocaleString('id-ID');
+  onCashInput();
+}
+
+function onCashInput(){
+  if(!currentPayData) return;
+  const raw=document.getElementById('cash-input').value.replace(/\D/g,'');
+  const n=parseInt(raw)||0;
+  // Format
+  if(n>0) document.getElementById('cash-input').value=n.toLocaleString('id-ID');
+  const fee=currentPayData.fee;
+  const btn=document.getElementById('pay-confirm-btn');
+  if(n>=fee){
+    const chg=n-fee;
+    document.getElementById('change-val').textContent=fmtRp(chg);
+    document.getElementById('change-display').style.display='flex';
+    document.getElementById('cash-warn').style.display='none';
+    btn.disabled=false; btn.style.opacity='1';
+  } else {
+    document.getElementById('change-display').style.display='none';
+    if(n>0){
+      document.getElementById('cash-warn').textContent=`⚠ Kurang ${fmtRp(fee-n)}`;
+      document.getElementById('cash-warn').style.display='block';
+    } else {
+      document.getElementById('cash-warn').style.display='none';
+    }
+    btn.disabled=true; btn.style.opacity='0.5';
+  }
+}
+
+function cancelPay(){
+  document.getElementById('pay-overlay').classList.remove('show');
+  currentPayData=null;
+}
+
+function confirmPay(){
+  if(!currentPayData) return;
+  const {code,res,ms,fee,hours,now}=currentPayData;
+  const slot=getSlot(res.slotId);
+
+  let cashPaid=0, change=0;
+  if(selectedPayMethod==='cash'){
+    cashPaid=parseInt(document.getElementById('cash-input').value.replace(/\D/g,''))||0;
+    change=cashPaid-fee;
+  }
+
+  // Update reservation
+  res.status='done';
+  res.checkoutTime=now;
+
+  // Free slot
+  if(slot){
+    slot.type='available'; slot.plate=null; slot.vtype=null;
+    slot.checkinTime=null; slot.bookingCode=null;
+  }
+
+  // Update history
+  const rec=txHistory.find(h=>h.code===code);
+  if(rec){ rec.checkout=now; rec.duration=ms; rec.fee=fee; rec.status='done'; }
+
+  totalRevenue+=fee;
+  totalCheckout++;
+  document.getElementById('pay-overlay').classList.remove('show');
+  updateSlotOpts(); updateHeader(); renderMap(); renderOccupied();
+
+  showToast(`✓ Pembayaran ${fmtRp(fee)} berhasil!`,'success');
+  showReceiptModal({code,res,ms,fee,hours,now,cashPaid,change,method:selectedPayMethod});
+  currentPayData=null;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RECEIPT
+══════════════════════════════════════════════════════════ */
+let lastReceiptData=null;
+
+function showReceiptModal(d){
+  lastReceiptData=d;
+  const {code,res,ms,fee,hours,now,cashPaid,change,method}=d;
+  const h=Math.floor(ms/3600000), m=Math.floor((ms%3600000)/60000), s=Math.floor((ms%60000)/1000);
+
+  document.getElementById('rcpt-content').innerHTML=`
+    <div class="receipt-paper">
+      <div class="receipt-head">
+        <div class="receipt-brand">🅿 SMARTPARK</div>
+        <div style="font-size:9px;color:var(--sub)">QR Parking System • Jl. Sudirman No.1</div>
+        <div style="border-bottom:1px dashed var(--border2);margin:10px 0"></div>
+      </div>
+      <div class="receipt-row"><span class="receipt-key">Kode Booking</span><span class="receipt-val" style="color:#d97706">${code}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Plat Nomor</span><span class="receipt-val">${res.plate}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Kendaraan</span><span class="receipt-val">${TARIFF_LABEL[res.vtype]}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Slot</span><span class="receipt-val">${res.slotId}</span></div>
+      <div style="border-bottom:1px dashed var(--border);margin:6px 0"></div>
+      <div class="receipt-row"><span class="receipt-key">Dipesan</span><span class="receipt-val">${fmtDate(res.bookedAt)} ${fmtTime(res.bookedAt)}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Masuk</span><span class="receipt-val">${fmtDate(res.checkinTime)} ${fmtTime(res.checkinTime)}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Keluar</span><span class="receipt-val">${fmtDate(now)} ${fmtTime(now)}</span></div>
+      <div style="border-bottom:1px dashed var(--border);margin:6px 0"></div>
+      <div class="receipt-row"><span class="receipt-key">Durasi (Auto)</span><span class="receipt-val">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Jam Dihitung</span><span class="receipt-val">${hours} jam</span></div>
+      <div class="receipt-row"><span class="receipt-key">Tarif/jam</span><span class="receipt-val">${fmtRp(TARIFF[res.vtype])}</span></div>
+      <div style="border-bottom:1px dashed var(--border);margin:6px 0"></div>
+      <div class="receipt-row"><span class="receipt-key">Metode</span><span class="receipt-val">${method==='qris'?'QRIS':'Tunai'}</span></div>
+      ${method==='cash'?`
+      <div class="receipt-row"><span class="receipt-key">Dibayar</span><span class="receipt-val">${fmtRp(cashPaid)}</span></div>
+      <div class="receipt-row"><span class="receipt-key">Kembalian</span><span class="receipt-val" style="color:#059669">${fmtRp(change)}</span></div>`:''}
+      <div class="receipt-total-row">
+        <span style="font-weight:700">TOTAL</span>
+        <span class="receipt-total-val">${fmtRp(fee)}</span>
+      </div>
+      <div style="border-top:1px dashed var(--border2);margin-top:10px;padding-top:10px;text-align:center;font-size:9px;color:var(--sub);line-height:2">
+        Durasi dihitung otomatis oleh sistem<br/>
+        ★ Terima kasih — Berkendara dengan aman ★
+      </div>
+    </div>`;
+  document.getElementById('rcpt-overlay').classList.add('show');
+}
+
+function closeReceipt(){
+  document.getElementById('rcpt-overlay').classList.remove('show');
+}
+
+function printReceipt(){
+  if(!lastReceiptData) return;
+  const {code,res,ms,fee,hours,now,cashPaid,change,method}=lastReceiptData;
+  const h=Math.floor(ms/3600000),m2=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);
+  const w=window.open('','_blank','width=380,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><title>Struk ${code}</title>
+  <style>body{font-family:'Courier New',monospace;padding:18px;max-width:300px;margin:auto;font-size:12px}
+  h2{text-align:center;font-size:16px;letter-spacing:2px;margin:0}
+  .s{text-align:center;font-size:9px;color:#666;margin:2px 0 12px}
+  hr{border:none;border-top:1px dashed #aaa;margin:7px 0}
+  .r{display:flex;justify-content:space-between;margin:3px 0}
+  .center{text-align:center}
+  </style></head><body>
+  <h2>🅿 SMARTPARK</h2>
+  <div class="s">QR Parking System<br/>Jl. Sudirman No.1, Jakarta</div><hr/>
+  <div class="r"><span>Kode</span><b>${code}</b></div>
+  <div class="r"><span>Plat</span><b>${res.plate}</b></div>
+  <div class="r"><span>Kendaraan</span><span>${TARIFF_LABEL[res.vtype]}</span></div>
+  <div class="r"><span>Slot</span><b>${res.slotId}</b></div><hr/>
+  <div class="r"><span>Dipesan</span><span>${fmtDate(res.bookedAt)} ${fmtTime(res.bookedAt)}</span></div>
+  <div class="r"><span>Masuk</span><span>${fmtDate(res.checkinTime)} ${fmtTime(res.checkinTime)}</span></div>
+  <div class="r"><span>Keluar</span><span>${fmtDate(now)} ${fmtTime(now)}</span></div><hr/>
+  <div class="r"><span>Durasi</span><b>${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}:${String(s).padStart(2,'0')}</b></div>
+  <div class="r"><span>Jam dihitung</span><span>${hours} jam</span></div>
+  <div class="r"><span>Tarif/jam</span><span>${fmtRp(TARIFF[res.vtype])}</span></div><hr/>
+  <div class="r"><span>Metode</span><span>${method==='qris'?'QRIS':'Tunai'}</span></div>
+  ${method==='cash'?`<div class="r"><span>Dibayar</span><span>${fmtRp(cashPaid)}</span></div><div class="r"><span>Kembalian</span><b style="color:green">${fmtRp(change)}</b></div>`:''}
+  <hr/><div class="r"><b>TOTAL</b><b style="font-size:16px;color:green">${fmtRp(fee)}</b></div><hr/>
+  <div class="center" style="font-size:9px;color:#555;line-height:2">
+  Durasi dihitung otomatis oleh sistem<br/>★ Terima kasih ★</div>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(()=>w.print(),400);
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXPIRED CHECKER — tiap 30 detik
+══════════════════════════════════════════════════════════ */
+function checkExpired(){
+  const now=Date.now();
+  let changed=false;
+  Object.entries(reservations).forEach(([code,res])=>{
+    if(res.status==='pending'){
+      const age=now-res.bookedAt.getTime();
+      if(age>EXPIRY_MS){
+        res.status='expired';
+        const slot=getSlot(res.slotId);
+        if(slot&&slot.bookingCode===code){
+          slot.type='available'; slot.plate=null; slot.vtype=null; slot.bookingCode=null;
+        }
+        const rec=txHistory.find(h=>h.code===code);
+        if(rec) rec.status='expired';
+        changed=true;
+        showToast(`⌛ Booking ${code} (${res.plate}) hangus — tidak di-scan dalam 1 jam`,'warn');
+      }
+    }
+  });
+  if(changed){ updateHeader(); renderMap(); renderOccupied(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: MAP
+══════════════════════════════════════════════════════════ */
+function renderMap(){
+  const c=document.getElementById('zones-container');
+  c.innerHTML='';
+  Object.entries(zones).forEach(([key,zone])=>{
+    const total=zone.slots.length;
+    const avail=zone.slots.filter(s=>s.type==='available').length;
+    const occ  =zone.slots.filter(s=>s.type==='occupied').length;
+    const res  =zone.slots.filter(s=>s.type==='reserved').length;
+    const pct  =Math.round(((occ+res)/total)*100);
+    const fc   =pct>80?'#ef4444':pct>50?'#f59e0b':'#10b981';
+
+    const area=document.createElement('div');
+    area.className='park-area';
+    area.innerHTML=`
+      <div class="za-hdr">
+        <div class="za-name">${zone.name}</div>
+        <div class="za-cnt">${avail} tersedia • ${res} dipesan • ${occ} terisi</div>
+      </div>
+      <div class="occ-row">
+        <div class="occ-lbl"><span>Hunian</span><span>${pct}%</span></div>
+        <div class="occ-bar"><div class="occ-fill" style="width:${pct}%;background:${fc}"></div></div>
+      </div>
+      <div class="pgrid" style="grid-template-columns:repeat(${zone.cols},1fr)" id="grid-${key}"></div>
+      <div class="road">— Jalur Kendaraan —</div>`;
+    c.appendChild(area);
+
+    const grid=area.querySelector(`#grid-${key}`);
+    zone.slots.forEach(slot=>{
+      const el=document.createElement('div');
+      el.className=`ps ${slot.type==='reserved_perm'?'disabled':slot.type}`;
+      el.title=slot.id+(slot.plate?` — ${slot.plate}`:'');
+
+      const iconMap={
+        available:'🟢', occupied:'🚗', reserved:'🔒',
+        disabled:'♿', reserved_perm:'♿', expired:'⬜'
+      };
+
+      // Countdown for reserved
+      let cdwn='';
+      if(slot.type==='reserved'&&slot.bookingCode){
+        const r=reservations[slot.bookingCode];
+        if(r&&r.status==='pending'){
+          const rem=Math.max(0,EXPIRY_MS-(Date.now()-r.bookedAt.getTime()));
+          const rm=Math.floor(rem/60000);
+          cdwn=`<div class="ps-pl" style="color:#d97706">${rm}m</div>`;
+        }
+      }
+
+      el.innerHTML=`
+        <div class="ps-icon">${iconMap[slot.type]||'⬜'}</div>
+        <div class="ps-id">${slot.id}</div>
+        ${slot.plate?`<div class="ps-pl">${slot.plate}</div>`:''}
+        ${cdwn}`;
+
+      el.onclick=()=>onSlotClick(slot);
+      grid.appendChild(el);
+    });
+  });
+}
+
+function onSlotClick(slot){
+  if(slot.type==='occupied'){
+    // Find reservation
+    const code=slot.bookingCode;
+    if(code){ showScanModal('checkout',code,reservations[code]); }
+  } else if(slot.type==='reserved'){
+    if(slot.bookingCode) showQRModal(slot.bookingCode);
+  } else if(slot.type==='available'){
+    document.getElementById('b-zone').value=slot.id[0];
+    updateSlotOpts();
+    document.getElementById('b-slot').value=slot.id;
+    setSideTab('booking');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: ACTIVE / RESERVED LISTS
+══════════════════════════════════════════════════════════ */
+function renderOccupied(){
+  const now=new Date();
+  const occupied=allSlots().filter(s=>s.type==='occupied');
+  const reserved=allSlots().filter(s=>s.type==='reserved');
+
+  document.getElementById('occ-count').textContent=occupied.length;
+  document.getElementById('res-count').textContent=reserved.length;
+
+  // Active
+  const ol=document.getElementById('occ-list');
+  ol.innerHTML=occupied.length?occupied.map(s=>{
+    const ms=now-s.checkinTime;
+    const fee=calcFee(ms,s.vtype);
+    const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),sc=Math.floor((ms%60000)/1000);
+    return `<div class="sc" onclick="onSlotClick(getSlot('${s.id}'))">
+      <div class="sc-top"><div class="sc-id">${s.id}</div><div class="sc-plate">${s.plate}</div></div>
+      <div class="sc-info">
+        <span>${TARIFF_LABEL[s.vtype]}</span>
+        <span>${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}</span>
+        <span class="sc-fee">${fmtRp(fee)}</span>
+      </div></div>`;
+  }).join(''):'<div class="no-sl">Belum ada kendaraan aktif</div>';
+
+  // Reserved
+  const rl=document.getElementById('res-list');
+  rl.innerHTML=reserved.length?reserved.map(s=>{
+    const code=s.bookingCode;
+    const res=code?reservations[code]:null;
+    if(!res) return '';
+    const rem=Math.max(0,EXPIRY_MS-(now-res.bookedAt.getTime()));
+    const rm=Math.floor(rem/60000), rs2=Math.floor((rem%60000)/1000);
+    const isUrgent=rm<15;
+    return `<div class="sc" onclick="showQRModal('${code}')">
+      <div class="sc-top"><div class="sc-id">${s.id}</div><div class="sc-plate">${s.plate}</div></div>
+      <div class="sc-info">
+        <span>${TARIFF_LABEL[s.vtype]}</span>
+        <span class="${isUrgent?'sc-exp':''}">Hangus: ${String(rm).padStart(2,'0')}:${String(rs2).padStart(2,'0')}</span>
+        <span style="color:var(--sub)">${code}</span>
+      </div></div>`;
+  }).join(''):'<div class="no-sl">Belum ada reservasi menunggu</div>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: HEADER STATS
+══════════════════════════════════════════════════════════ */
+function updateHeader(){
+  const all=allSlots();
+  document.getElementById('h-avail').textContent=all.filter(s=>s.type==='available').length;
+  document.getElementById('h-res').textContent  =all.filter(s=>s.type==='reserved').length;
+  document.getElementById('h-occ').textContent  =all.filter(s=>s.type==='occupied').length;
+  document.getElementById('h-rev').textContent  =fmtRp(totalRevenue);
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: STATS
+══════════════════════════════════════════════════════════ */
+function renderStats(){
+  document.getElementById('m-checkin').textContent=totalCheckin;
+  document.getElementById('m-checkout').textContent=totalCheckout;
+  document.getElementById('m-rev').textContent=fmtRp(totalRevenue);
+  document.getElementById('zone-stats').innerHTML=Object.entries(zones).map(([k,z])=>{
+    const total=z.slots.length,occ=z.slots.filter(s=>s.type==='occupied').length;
+    const res=z.slots.filter(s=>s.type==='reserved').length;
+    const pct=Math.round(((occ+res)/total)*100);
+    const color=pct>80?'#ef4444':pct>50?'#f59e0b':'#10b981';
+    return `<div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+        <span style="font-weight:600">${z.name}</span>
+        <span style="color:var(--sub)">${occ}/${total} terisi — ${pct}%</span>
+      </div>
+      <div class="occ-bar"><div class="occ-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER: HISTORY
+══════════════════════════════════════════════════════════ */
+function renderHistory(){
+  const tbody=document.getElementById('hist-body');
+  if(!txHistory.length){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--sub);padding:24px">Belum ada riwayat</td></tr>';
+    return;
+  }
+  tbody.innerHTML=txHistory.slice(0,100).map(h=>{
+    const statusBadge={
+      reserved:`<span class="badge res">Dipesan</span>`,
+      active:`<span class="badge in">Aktif</span>`,
+      done:`<span class="badge out">Selesai</span>`,
+      expired:`<span class="badge exp">Hangus</span>`,
+    };
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:10px;font-weight:700;color:#d97706">${h.code}</td>
+      <td style="font-family:var(--mono);font-size:11px;font-weight:700">${h.plate}</td>
+      <td>${TARIFF_LABEL[h.vtype]}</td>
+      <td style="font-family:var(--mono);font-size:10px">${h.slotId}</td>
+      <td style="font-size:10px;color:var(--sub)">${fmtDate(h.booked)} ${fmtTime(h.booked)}</td>
+      <td style="font-size:10px;color:var(--sub)">${h.checkin?fmtDate(h.checkin)+' '+fmtTime(h.checkin):'—'}</td>
+      <td style="font-size:10px;color:var(--sub)">${h.checkout?fmtDate(h.checkout)+' '+fmtTime(h.checkout):'—'}</td>
+      <td style="font-size:10px">${h.duration?fmtDur(h.duration):'—'}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:${h.fee?'#059669':'var(--sub)'}">${h.fee?fmtRp(h.fee):'—'}</td>
+      <td>${statusBadge[h.status]||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLOCK & TICK
+══════════════════════════════════════════════════════════ */
+function tick(){
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('id-ID');
+  renderOccupied();
+  renderMap();
+}
+
+// Init
+updateSlotOpts();
+renderMap();
+updateHeader();
+renderOccupied();
+setInterval(tick, 1000);
+setInterval(checkExpired, 30000);
+setInterval(()=>{ setMainTab(document.querySelector('.content .tb.active')?.textContent.includes('Stat')?'statistik':document.querySelector('.content .tb.active')?.textContent.includes('Ri')?'riwayat':'peta'); }, 10000);
+// Initial tab
+document.querySelector('.content .tb.active').onclick();
+</script>
+</body>
+</html>
